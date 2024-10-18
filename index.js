@@ -5,6 +5,15 @@ if (isNaN(process.env["DELAY"])) {
 if (process.env["LINKS"] == undefined) {
   throw new Error("LINKS env variable is undefined.");
 }
+if (process.env["EMAIL"] == undefined) {
+  throw new Error("EMAIL env variable is undefined.");
+}
+if (process.env["APP_PASSWORD"] == undefined) {
+  throw new Error("APP_PASSWORD env variable is undefined.");
+}
+if (process.env["RECEIVERS"] == undefined) {
+  throw new Error("LINKS env variable is undefined.");
+}
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({

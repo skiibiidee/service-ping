@@ -14,6 +14,10 @@ if (process.env["APP_PASSWORD"] == undefined) {
 if (process.env["RECEIVERS"] == undefined) {
   throw new Error("LINKS env variable is undefined.");
 }
+if (process.env["PORT"] == undefined) {
+  throw new Error("PORT env variable is undefined.");
+}
+const port = process.env["PORT"]
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
@@ -31,13 +35,14 @@ let errors = {
   count: 0,
   errorsRecord: [],
   increase: (e, url) => {
+    const timestamp = new Date().toISOString(); // Add timestamp for when the error occurs
     errors.count++;
-    errors.errorsRecord.push({ e, url });
+    errors.errorsRecord.push({ e, url, timestamp });
     if (errors.count > 5) {
       if (emailCooldownTill < Date.now()) {
         console.log("Sending email...");
         sendEmail(errors.errorsRecord);
-        emailCooldownTill = Date.now() + 24 * 60 * 60 * 1000;
+        emailCooldownTill = Date.now() + 24 * 60 * 60 * 1000; // 24-hour cooldown
       }
     }
   },
@@ -208,3 +213,147 @@ async function ping(link) {
 
 setInterval(pingSites, delay);
 console.log(`Pinging started. Pinging in ${delay}ms`);
+
+const express = require('express')
+const app = express()
+
+app.get('/', (req, res) => {
+  res.send(`<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Logs</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #1e1e2f;
+        color: #e4e4e4;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 28px;
+        color: #62dafb;
+        margin-bottom: 20px;
+      }
+
+      .log-entry {
+        background-color: #2b2c43;
+        border: 1px solid #444559;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        padding: 15px 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .log-header h3 {
+        margin: 0;
+        font-size: 20px;
+        color: #f0f0f0;
+      }
+
+      .log-header .status {
+        font-size: 14px;
+        padding: 5px 12px;
+        border-radius: 12px;
+        background-color: #ff5e5e;
+        color: white;
+        text-transform: uppercase;
+      }
+
+      .log-body {
+        font-size: 16px;
+        background-color: #33334d;
+        border-left: 4px solid #ff8c8c;
+        padding: 15px;
+        border-radius: 4px;
+        color: #bbbbbb;
+        font-family: Consolas, 'Courier New', Courier, monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .log-footer {
+        font-size: 12px;
+        color: #888888;
+        text-align: right;
+        padding-top: 10px;
+      }
+
+      .pagination {
+        text-align: center;
+        margin-top: 30px;
+      }
+
+      .pagination a {
+        color: #62dafb;
+        text-decoration: none;
+        padding: 8px 15px;
+        border: 1px solid #444559;
+        border-radius: 4px;
+        margin: 0 5px;
+      }
+
+      .pagination a:hover {
+        background-color: #444559;
+      }
+
+      @media (max-width: 768px) {
+        .log-header h3 {
+          font-size: 18px;
+        }
+
+        .log-body {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Service Logs</h1>
+      ${errors.count == 0 
+        ? `<p>No errors logged yet.</p>` 
+        : errors.errorsRecord
+            .slice()
+            .reverse() // Reverse the order to show newest logs first
+            .map((log, index) => `
+          <div class="log-entry">
+            <div class="log-header">
+              <h3>Error #${errors.count - index}</h3>
+              <span class="status">ERROR</span>
+            </div>
+            <div class="log-body">
+              <strong>URL:</strong> ${log.url}<br>
+              <strong>Error Message:</strong> ${log.e}
+            </div>
+            <div class="log-footer">
+              Logged at: ${new Date(log.timestamp).toLocaleString()}
+            </div>
+          </div>
+        `).join('')}
+    </div>
+  </body>
+  </html>`);
+});
+
+
+app.listen(port, () => {
+  console.log(`App listening on :${port}`)
+})

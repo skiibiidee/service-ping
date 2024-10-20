@@ -38,7 +38,7 @@ let errors = {
     const timestamp = new Date().toISOString(); // Add timestamp for when the error occurs
     errors.count++;
     errors.errorsRecord.push({ e, url, timestamp });
-    if (errors.count > 5) {
+    if (errors.count > 15) {
       if (emailCooldownTill < Date.now()) {
         console.log("Sending email...");
         sendEmail(errors.errorsRecord);
